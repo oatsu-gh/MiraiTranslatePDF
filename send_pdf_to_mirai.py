@@ -10,12 +10,12 @@ import sys
 import os
 import re
 # from time import time
-# from time import sleep
+from time import sleep
 from io import StringIO
 # from getpass import getpass  # パスワード入力用
 from selenium import webdriver
 # from selenium.webdriver.common.alert import Alert
-# from selenium.webdriver.common.by import By
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 # from pysnooper import snoop
@@ -146,6 +146,8 @@ def trim_txt(txt):
     for sentence in re.split('.', txt):
         if sentence != '.':
             l_1.append(sentence)
+        elif sentence == '':
+            pass
         else:
             l_1[-1] += sentence
 
@@ -170,22 +172,43 @@ def use_miraitranslate(d, l):
     d.get('https://miraitranslate.com/trial/')
     wait.until(EC.presence_of_all_elements_located)
     d.find_element_by_class_name('sourceLanguageDiv').click()
-    d.find_element_by_xapth('/html/body/span/span/span[2]/ul/li[2]').click()
+    wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/span/span/span[2]/ul/li[2]')))
+    d.find_element_by_xpath('/html/body/span/span/span[2]/ul/li[2]').click()
+    d.find_element_by_id('translateSourceInput').click()
 
     translated = ''
+    print(l)
     for en in l:
-        d.find_element_by_id('translateSourceInput').input(en)
+        sleep(5)
+        d.find_element_by_id('translateSourceInput').send_keys(en)
+        sleep(5)
+        d.find_element_by_id('translateButtonTextTranslation').click()
+        sleep(5)
+        ja = d.find_element_by_id('translate-text').getAttribute('value')
         translated += ja
-    return 0
+    return translated
 
 
 def main():
-    pdfname = input('PDFファイル名を入力してください。\n>>> ')
+    pdfname = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
 
     print('PDFを読み取ります。')
     txt = gettext(pdfname)
+    print(txt)
     print('PDFを読み取りました。')
 
     print('みらい翻訳で翻訳します。')
     l = trim_txt(txt)
     translated = use_miraitranslate(select_driver(BROWSER_NAME), l)
+    print('みらい翻訳が完了しました。')
+
+    print('ファイル出力を開始します。')
+    path = ABS_DIRNAME + '/mirai_output.txt'
+    with open(path, mode='w') as f:
+        f.write(translated)
+    print('ファイル出力が完了しました。')
+
+
+if __name__ == '__main__':
+    main()
+    input('Press enter to quit.')
