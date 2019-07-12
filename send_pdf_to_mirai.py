@@ -178,12 +178,16 @@ def use_miraitranslate(d, l):
     文字列をみらい翻訳に送りつけて、翻訳結果を文字列で返す関数
     d: webdriver, txt: 翻訳したい文章
     """
+    # 空文字列を除去
+    l = filter(lambda str: str != '', l)
+    l = filter(lambda str: str != '\x0c', l)
 
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
 
     wait = WebDriverWait(d, 10)
     wait.until(EC.presence_of_all_elements_located)
+    wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'sourceLanguageDiv')))
 
     # 原文言語を日本語に設定
     d.find_element_by_class_name('sourceLanguageDiv').click()
@@ -191,13 +195,13 @@ def use_miraitranslate(d, l):
     d.find_element_by_xpath('/html/body/span/span/span[2]/ul/li[2]').click()
 
     # 原文入力欄を記憶
-    txt_in = d.find_element_by_id('translateSourceInput')
+    # txt_in = d.find_element_by_id('translateSourceInput')
 
     # 翻訳作業
     answer = ''
     for v in tqdm(l):
         # 原文を入力
-        txt_in.send_keys(v)
+        d.find_element_by_id('translateSourceInput').send_keys(v)
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
         d.find_element_by_id('translateButtonTextTranslation').click()
@@ -207,7 +211,8 @@ def use_miraitranslate(d, l):
         translated = d.find_element_by_id('translate-text').text + '\n'
         answer += translated
         # 原文を消去
-        txt_in.clear()
+        d.find_element_by_id('translateSourceInput').clear()
+
     return answer
 
 
@@ -258,6 +263,10 @@ def main():
         print('失敗しました。')
 
     except exceptions.ElementClickInterceptedException as e:
+        print(e)
+        d.close()
+        print('失敗しました。')
+    except exceptions.TimeoutException as e:
         print(e)
         d.close()
         print('失敗しました。')
