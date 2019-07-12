@@ -34,7 +34,7 @@ BROWSER_NAME = 'Firefox'
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
 # テストモード（有効にすると標準出力が増える）
-TEST_MODE = False
+TEST_MODE = True
 
 
 def gettext(pdfname):
@@ -87,36 +87,25 @@ def split_txt(txt):
     文章を区切ってリストで返す
     txt:文章の文字列
     """
-    # 文を区切る長さ
-    # n = 5
-
-    # テキストをピリオドで区切ってリストにする
-    # ピリオドが消えるから元に戻す
-    # l_1 = list(txt.split('.'))
-    # for i in range(len(l_1)):
-    #     if l_1[i] not in ('\n', '\n\n', '\n\n\x0c'):
-    #         l_1[i] += '.'
-
-    # 5文ごとにまとめる
-    # l_2 = []
-    # m = len(l_1) // n
-    # for i in range(m + 1):
-    #     l_2.append(l_1[i * 5: (i + 1) * 5])
-    #     l_2.append(l_1[(i + 1) * 5:])
-
-    # 5文ごとのリストを返す
-    # return l_2
-
     # テキストを改行で区切ってリストで返す
-    l_1 = list(txt.split('\n'))
+    l = list(txt.split('\n'))
+
+    # 空文字列を除去
+    l = list(filter(lambda str: str != '', l))
+    l = list(filter(lambda str: str != '\x0c', l))
+
     tmp = ''
     l_2 = []
-    for v in l_1:
+
+    n = len(l)
+    for i in range(n):
         if len(tmp) < 1000:
-            tmp += v
+            tmp += '\n' + l[i]
         else:
             l_2.append(tmp)
-            tmp = ''
+            tmp = l[i]
+        if i == n-1:
+            l_2.append(tmp)
     return l_2
 
 
@@ -188,14 +177,10 @@ def use_miraitranslate(d, l):
     文字列をみらい翻訳に送りつけて、翻訳結果を文字列で返す関数
     d: webdriver, txt: 翻訳したい文章
     """
-    # 空文字列を除去
-    l = filter(lambda str: str != '', l)
-    l = filter(lambda str: str != '\x0c', l)
-
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
 
-    wait = WebDriverWait(d, 10)
+    wait = WebDriverWait(d, 20)
     wait.until(EC.presence_of_all_elements_located)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'sourceLanguageDiv')))
 
@@ -212,11 +197,11 @@ def use_miraitranslate(d, l):
     for v in tqdm(l):
         # 原文を入力
         d.find_element_by_id('translateSourceInput').send_keys(v)
-        sleep(2)
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
+        wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, 'loader')))
         d.find_element_by_id('translateButtonTextTranslation').click()
-        sleep(4)
+        sleep(1)
         wait.until(EC.element_to_be_clickable((By.ID, 'translate-text')))
         # 翻訳結果を取得
         translated = d.find_element_by_id('translate-text').text + '\n'
