@@ -108,7 +108,17 @@ def split_txt(txt):
     # return l_2
 
     # テキストを改行で区切ってリストで返す
-    return list(txt.split('\n'))
+    l_1 = list(txt.split('\n'))
+    tmp = ''
+    l_2 = []
+    for v in l_1:
+        if len(tmp) < 1000:
+            tmp += v
+        else:
+            l_2.append(v)
+            v = ''
+    return l_2
+
 
 
 def select_driver(browser):
@@ -202,10 +212,11 @@ def use_miraitranslate(d, l):
     for v in tqdm(l):
         # 原文を入力
         d.find_element_by_id('translateSourceInput').send_keys(v)
+        sleep(2)
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
         d.find_element_by_id('translateButtonTextTranslation').click()
-        sleep(1)
+        sleep(4)
         wait.until(EC.element_to_be_clickable((By.ID, 'translate-text')))
         # 翻訳結果を取得
         translated = d.find_element_by_id('translate-text').text + '\n'
