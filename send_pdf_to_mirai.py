@@ -225,7 +225,7 @@ def main():
     5. 翻訳結果をTXTファイルに保存する
     """
     pdfname = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
-    pdfname = ABS_DIRNAME + '/input.pdf'
+    # pdfname = ABS_DIRNAME + '/input.pdf'
 
     print('PDFを読み取ります。')
     txt = gettext(pdfname)
