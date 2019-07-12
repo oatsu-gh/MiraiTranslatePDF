@@ -115,8 +115,8 @@ def split_txt(txt):
         if len(tmp) < 1000:
             tmp += v
         else:
-            l_2.append(v)
-            v = ''
+            l_2.append(tmp)
+            tmp = ''
     return l_2
 
 
