@@ -93,6 +93,7 @@ def split_txt(txt):
     # 空文字列を除去
     l = list(filter(lambda str: str != '', l))
     l = list(filter(lambda str: str != '\x0c', l))
+    l = list(filter(lambda str: str != '\xa9', l))
 
     tmp = ''
     l_2 = []
