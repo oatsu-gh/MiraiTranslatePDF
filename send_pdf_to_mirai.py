@@ -6,24 +6,27 @@
 """
 pdfを読み取ってみらい翻訳に投げるスクリプト
 """
-import sys
 import os
 import re
-# from time import time
-from time import sleep
+import sys
 from io import StringIO
 # from getpass import getpass  # パスワード入力用
+from pprint import pprint
+# from time import time
+from time import sleep
+
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+from pdfminer.pdfpage import PDFPage
 from selenium import webdriver
 # from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
 # from pysnooper import snoop
 
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfpage import PDFPage
 
 
 # ブラウザを指定(Firefox,Chrome,Edge)
@@ -70,7 +73,8 @@ def gettext(pdfname):
     device.close()
     outfp.close()
     # 空白と改行をとりさり一塊のテキストとして返す
-    return re.sub(r"\s|　", '', ret)
+    # return re.sub(r"\s|　", '', ret)
+    return ret
 
 # ------------ここまでコピペ-------------------------
 
@@ -136,10 +140,14 @@ def select_driver(browser):
     sys.exit()
 
 
-def trim_txt(txt):
+def split_txt(txt):
     """
     文章を5文ごとに分けてリストで返す
+    txt:文章の文字列
     """
+    # 文を区切る長さ
+    n = 5
+
     # テキストをピリオドで区切ってリストにする
     # ピリオドが消えるから元に戻す
     l_1 = []
@@ -153,7 +161,7 @@ def trim_txt(txt):
 
     # 5文ごとにまとめる
     l_2 = []
-    n = len(l_1) // 5
+    n = len(l_1) // n
     for i in range(n):
         l_2.append(l_1[i * 5: (i + 1) * 5])
     l_2.append(l_1[(i + 1) * 5:])
@@ -167,6 +175,7 @@ def use_miraitranslate(d, l):
     文字列をみらい翻訳に送りつけて、翻訳結果を文字列で返す関数
     d: webdriver, txt: 翻訳したい文章
     """
+    time = 2
     wait = WebDriverWait(d, 10)
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
@@ -179,11 +188,11 @@ def use_miraitranslate(d, l):
     translated = ''
     print(l)
     for en in l:
-        sleep(5)
+        sleep(time)
         d.find_element_by_id('translateSourceInput').send_keys(en)
-        sleep(5)
+        sleep(time)
         d.find_element_by_id('translateButtonTextTranslation').click()
-        sleep(5)
+        sleep(time)
         ja = d.find_element_by_id('translate-text').getAttribute('value')
         translated += ja
     return translated
@@ -194,19 +203,32 @@ def main():
 
     print('PDFを読み取ります。')
     txt = gettext(pdfname)
+    print('txt----------')
     print(txt)
+    print('txt----------')
     print('PDFを読み取りました。')
 
-    print('みらい翻訳で翻訳します。')
-    l = trim_txt(txt)
-    translated = use_miraitranslate(select_driver(BROWSER_NAME), l)
-    print('みらい翻訳が完了しました。')
+    print('文章を分割します。')
+    l = split_txt(txt)
+    print('l:')
+    pprint('l')
+    print('文章を分割しました。')
 
-    print('ファイル出力を開始します。')
-    path = ABS_DIRNAME + '/mirai_output.txt'
-    with open(path, mode='w') as f:
-        f.write(translated)
-    print('ファイル出力が完了しました。')
+    try:
+        print('みらい翻訳で翻訳します。')
+        d = select_driver(BROWSER_NAME)
+        translated = use_miraitranslate(d, l)
+        print('みらい翻訳が完了しました。')
+
+        print('ファイル出力を開始します。')
+        path = ABS_DIRNAME + '/mirai_output.txt'
+        with open(path, mode='w') as f:
+            f.write(translated)
+        print('ファイル出力が完了しました。')
+
+    except:
+        print('Error occured.')
+        d.close()
 
 
 if __name__ == '__main__':
