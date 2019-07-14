@@ -6,15 +6,15 @@
 """
 pdfを読み取ってみらい翻訳に投げるスクリプト
 """
+# from getpass import getpass  # パスワード入力用
+# import codecs
 import os
 import subprocess
 # import re
 import sys
 from io import StringIO
-# from getpass import getpass  # パスワード入力用
 from pprint import pprint
-# from time import time
-from time import sleep
+from time import sleep, time
 
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -51,7 +51,8 @@ def gettext(pdfname):
         fp = open(pdfname, 'rb')
     except FileNotFoundError as e:
         print(e)
-        return ''
+        print('Press Enter to exit.')
+        sys.exit()
 
     # リソースマネージャインスタンス
     rsrcmgr = PDFResourceManager()
@@ -77,6 +78,9 @@ def gettext(pdfname):
     outfp.close()
     # 空白と改行をとりさり一塊のテキストとして返す
     # return re.sub(r"\s|　", '', ret)
+    path = ABS_DIRNAME + '/mirai_output2(OCR).txt'
+    with open(path, mode='wb') as f:
+        f.write(ret.encode('cp932', 'ignore'))
     return ret
 
 # ------------ここまでコピペ-------------------------
@@ -88,27 +92,38 @@ def split_txt(txt):
     txt:文章の文字列
     """
     # テキストを改行で区切ってリストで返す
-    l = list(txt.split('\n'))
+    l = list(txt.split('.\n'))
+    if TEST_MODE:
+        print('l:')
+        pprint(l)
 
     # 空文字列を除去
-    l = list(filter(lambda str: str != '', l))
-    l = list(filter(lambda str: str != '\x0c', l))
-    l = list(filter(lambda str: str != '\xa9', l))
+    # l = filter(lambda str: str != '', l)
+    l = filter(lambda str: str != '\x0c', l)
+    # l = filter(lambda str: str != '\xa9', l)
+    # l = filter(lambda str: str != '\xf1', l)
+    l = list(l)
 
     tmp = ''
     l_2 = []
 
     n = len(l)
     for i in range(n):
-        if len(tmp) < 1000:
-            tmp += '\n' + l[i]
+        # 追加済みの文章が1500文字未満の場合は、いまの段落を文章に追加して長くする。
+        if len(tmp) < 1500:
+            tmp += l[i].replace('\n', ' ') + '. '
+            tmp = tmp.replace('  ', '\n')
+
+        # 1500文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
         else:
             l_2.append(tmp)
-            tmp = l[i]
-        if i == n-1:
+            tmp = l[i].replace('\n', ' ') + '. '
+            tmp = tmp.replace('  ', '\n')
+
+        # 最後の文章のとき
+        if i == n - 1:
             l_2.append(tmp)
     return l_2
-
 
 
 def select_driver(browser):
@@ -194,21 +209,38 @@ def use_miraitranslate(d, l):
     # txt_in = d.find_element_by_id('translateSourceInput')
 
     # 翻訳作業
+    i = 0
+    d_t = 0.0
     answer = ''
     for v in tqdm(l):
+
+        t_start = time()
+
         # 原文を入力
         d.find_element_by_id('translateSourceInput').send_keys(v)
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
         wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, 'loader')))
         d.find_element_by_id('translateButtonTextTranslation').click()
+        # ロード画面になるまで時間をおく
         sleep(1)
+        # 翻訳完了まで待つ
         wait.until(EC.element_to_be_clickable((By.ID, 'translate-text')))
+        sleep(0.05)
         # 翻訳結果を取得
         translated = d.find_element_by_id('translate-text').text + '\n'
         answer += translated
         # 原文を消去
         d.find_element_by_id('translateSourceInput').clear()
+
+        i += 1
+        d_t += time() - t_start
+        print('\ni={}  len={}  {:3f} s'.format(i, len(v), d_t))
+        if i >= 10 and d_t <= 60:
+            print('waiting...')
+            sleep(61 - d_t)
+            i = 0
+            d_t = 0.0
 
     return answer
 
@@ -217,7 +249,8 @@ def main():
     """
     1. PDFファイル名を指定
     2. PDFファイルからテキストを読み取る
-    3. テキストを改行で区切る
+    3. テキストを段落で区切る
+    4. 適当な長さになるように段落を連結する（2000字以内制限のため）
     4. みらい翻訳に送って翻訳する
     5. 翻訳結果をTXTファイルに保存する
     """
@@ -236,8 +269,8 @@ def main():
     l = split_txt(txt)
     if TEST_MODE:
         print('l:')
-        pprint(l)
-    print('文章を分割しました。')
+        print(l)
+    print('文章を{}分割しました。'.format(len(l)))
 
     try:
         print('ブラウザを起動します。')
@@ -250,8 +283,8 @@ def main():
 
         print('ファイル出力を開始します。')
         path = ABS_DIRNAME + '/mirai_output.txt'
-        with open(path, mode='w') as f:
-            f.write(translated)
+        with open(path, mode='wb') as f:
+            f.write(translated.encode('cp932', 'ignore'))
         print('ファイル出力が完了しました。')
 
     except AttributeError as e:
