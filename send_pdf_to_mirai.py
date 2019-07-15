@@ -6,6 +6,8 @@
 """
 pdfを読み取ってみらい翻訳に投げるスクリプト
 """
+# from getpass import getpass  # パスワード入力用
+# import codecs
 import os
 import subprocess
 # import re
@@ -14,30 +16,26 @@ from io import StringIO
 from pprint import pprint
 from time import sleep, time
 
-# import chromedriver_binary
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
+# from pysnooper import snoop
 from selenium import webdriver
 from selenium.common import exceptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-# from getpass import getpass  # パスワード入力用
-# import codecs
 from tqdm import tqdm
 
-# from pysnooper import snoop
-
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'HL_Chrome'
+BROWSER_NAME = 'Chrome'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
-TEST_MODE = False
-# OCRモード（古い文書を使うときに有効にする）
-OCR_MODE = True
+TEST_MODE = True
+# OCRモード（古い文章を使うときに有効にする）
+OCR_MODE = False
 
 
 def gettext(pdfname):
@@ -86,7 +84,6 @@ def gettext(pdfname):
         f.write(ret.encode('cp932', 'ignore'))
     return ret
 
-# ------------ここまでコピペ-------------------------
 
 
 def split_txt(txt):
@@ -113,24 +110,20 @@ def split_txt(txt):
     n = len(l)
     for i in range(n):
         len_li = len(l[i])
-        print('len_li =', len_li)
         # 文章があわせて1900文字未満の場合は、いまの段落を文章に追加して長くする。
-        if len(tmp) + len_li < 1800:
-            tmp += l[i].replace('\n', ' ') + '. '
-            # tmp = tmp.replace('  ', '\n\n')
+        if len(tmp) + len_li < 1900:
+            tmp += (l[i].replace('\n', ' ') + '. ').replace('  ', '\n\n')
 
-        # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_li < 1800:
+        # 1900文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
+        elif len_li < 1900:
             l_2.append(tmp)
-            tmp = l[i].replace('\n', ' ') + '. '
-            tmp = tmp.replace('  ', '\n\n')
+            tmp = (l[i].replace('\n', ' ') + '. ').replace('  ', '\n\n')
 
-        # とくに、いまの段落単独で1900文字を超える場合は1000~1800文字付近の文末で分割する。
+        # とくに、いまの段落単独で1900文字を超える場合は1500~1800文字付近の文末で分割する。
         else:
             l_2.append(tmp)
-            s = l[i].replace('\n', ' ') + '. '
-            s = s.replace('  ', '\n\n')
-            x = l[i].find('. ', 1000, 1800) + 2
+            s = (l[i].replace('\n', ' ') + '. ').replace('  ', '\n\n')
+            x = l[i].find('. ', 1500, 1800) + 2
             l_2.append(s[:x])
             tmp = s[x:]
 
@@ -149,7 +142,7 @@ def split_txt_ocrmode(txt):
     l = list(txt.split('.\n'))
     if TEST_MODE:
         print('l:')
-        print(l)
+        pprint(l)
 
     # 空文字列を除去
     # l = filter(lambda str: str != '', l)
@@ -163,31 +156,20 @@ def split_txt_ocrmode(txt):
 
     n = len(l)
     for i in range(n):
-        len_li = len(l[i])
-        print('len_li =', len_li)
         # 文章があわせて1900文字未満の場合は、いまの段落を文章に追加して長くする。
-        # 目安が1200と短めなのは、OCRだと改行やスペースを多く含みがちなため。
-        if len(tmp) + len_li < 1200:
-            print('pattern1---------')
+        if len(tmp) + len(l[i]) < 1900:
             tmp += l[i].replace('\n', ' ') + '. '
             # tmp = tmp.replace('  ', '\n\n')
 
-        # 1200文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_li < 1200:
-            print('pattern2---------')
+        # 1900文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
+        else:
             l_2.append(tmp)
             tmp = l[i].replace('\n', ' ') + '. '
             # tmp = tmp.replace('  ', '\n\n')
 
-        # とくに、いまの段落単独で1900文字を超える場合は800~1200文字付近の文末で分割する。
-        else:
-            print('-----pattern3-----')
+        # 最後の文章のとき
+        if i == n - 1:
             l_2.append(tmp)
-            s = l[i].replace('\n', ' ') + '. '
-            # s = s.replace('  ', '\n\n')
-            x = l[i].find('. ', 800, 1200) + 2
-            l_2.append(s[:x])
-            tmp = s[x:]
     return l_2
 
 
@@ -211,8 +193,11 @@ def select_driver(browser):
                 driver = webdriver.Chrome(
                     executable_path=R'C:\Programing\Drivers\webdrivers\chromedriver.exe',
                     options=options)
+            elif browser == 'Edge':
+                driver = webdriver.Edge(
+                    executable_path=R'C:\Programing\Drivers\webdrivers\webdriver.exe')
             else:
-                input('Firefox, Chrome のみ対応しています。')
+                input('Firefox, Chrome, Edge のみ対応しています。')
                 sys.exit()
         except FileNotFoundError:
             print('Error')
@@ -233,13 +218,13 @@ def select_driver(browser):
                 driver = webdriver.Chrome(
                     executable_path='/mnt/c/programing/drivers/webdrivers/chromedriver.exe')
             elif browser == 'HL_Chrome':
-                options = webdriver.ChromeOptions()
                 options.add_argument('--headless')
-                driver = webdriver.Chrome(
-                    executable_path='/mnt/c/programing/drivers/webdrivers/chromedriver.exe',
-                    options=options)
+                driver = webdriver.Chrome(options=options)
+            elif browser == 'Edge':
+                driver = webdriver.Edge(
+                    executable_path='/mnt/c/programing/drivers/webdrivers/webdriver.exe')
             else:
-                input('Firefox, Chrome のみ対応しています。')
+                input('Firefox, Chrome, Edge のみ対応しています。')
                 sys.exit()
         except FileNotFoundError:
             print('Error')
