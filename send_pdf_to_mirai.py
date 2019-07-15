@@ -11,6 +11,7 @@ import subprocess
 # import re
 import sys
 from io import StringIO
+from multiprocessing import Pool, cpu_count
 from pprint import pprint
 from time import sleep, time
 
@@ -37,7 +38,7 @@ ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
 TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
-OCR_MODE = True
+OCR_MODE = False
 
 
 def gettext(pdfname):
@@ -85,7 +86,6 @@ def gettext(pdfname):
     with open(path, mode='wb') as f:
         f.write(ret.encode('cp932', 'ignore'))
     return ret
-
 
 
 def split_txt(txt):
@@ -168,7 +168,6 @@ def split_txt_ocrmode(txt):
         # print('len_s1 =', len_s1)
         # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
         if len(s2) + len_s1 < 1600:
-            print('---case1---')
             s2 += s1
             # s2 = s2.replace('  ', '\n\n')
 
@@ -182,7 +181,6 @@ def split_txt_ocrmode(txt):
         # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
         else:
             l_2.append(s2)
-            print('---case3---')
             # s1 = s1.replace('  ', '\n\n')
             x = s1.find('. ', 1000, ) + 2
             l_2.append(s1[:x])
@@ -262,11 +260,13 @@ def select_driver(browser):
 
 
 # @snoop()
-def use_miraitranslate(d, l):
+def use_miraitranslate(l):
     """
     文字列をみらい翻訳に送りつけて、翻訳結果を文字列で返す関数
-    d: webdriver, txt: 翻訳したい文章
+    l: 翻訳したい文章のリスト
     """
+    # ブラウザパスの指定
+    d = select_driver(BROWSER_NAME)
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
 
@@ -308,6 +308,8 @@ def use_miraitranslate(d, l):
 
         d_t += time() - t_start
         print('\ni={}  len={}  {:.3f} s'.format(i, len(v), d_t))
+
+        # 60秒に10回までの制限対策
         if i == 9 and d_t <= 60:
             print('waiting...')
             sleep(61 - d_t)
@@ -317,7 +319,29 @@ def use_miraitranslate(d, l):
             i = 0
         i += 1
 
+    # ブラウザを閉じる
+    d.close()
+
     return answer
+
+
+def divide_list(l, n):
+    """
+    リスト l を n 分割する関数
+    """
+    idx = 0
+    l_div = []
+    # リスト長さをnで割った商とあまり
+    num, amari = divmod(len(l), n)
+    for i in range(n):
+        if i >= n - amari:
+            l_div.append(l[idx: idx + num + 1])
+            idx += num + 1
+        else:
+            l_div.append(l[idx: idx + num])
+            idx += num
+
+    return l_div
 
 
 def main():
@@ -351,13 +375,21 @@ def main():
     print('文章を{}分割しました。'.format(len(l)))
 
     try:
-        print('ブラウザを起動します。')
-        d = select_driver(BROWSER_NAME)
         print('みらい翻訳で翻訳します。')
-        translated = use_miraitranslate(d, l)
+        # コア数を数える
+        n = cpu_count()
+        if len(l) < 10:
+            translated = use_miraitranslate(l)
+        else:
+            print('{}スレッドで処理します。'.format(n))
+            l_div = divide_list(l, n)
+            # print('\nl1 =', l1)
+            # print('\nl2 =', l2)
+            pool = Pool(n)
+            translated_multi = pool.map(use_miraitranslate, [v for v in l_div])
+            translated = ''.join(translated_multi)
+
         print('みらい翻訳が完了しました。')
-        d.close()
-        print('ブラウザを終了しました。')
 
         print('ファイル出力を開始します。')
         path = ABS_DIRNAME + '/mirai_output.txt'
@@ -366,17 +398,14 @@ def main():
         print('ファイル出力が完了しました。')
 
     except AttributeError as e:
-        print(e)
-        d.close()
+        print('AttributeError:', e)
         print('失敗しました。')
 
     except exceptions.ElementClickInterceptedException as e:
-        print(e)
-        d.close()
+        print('ElementClickIntercepted:', e)
         print('失敗しました。')
     except exceptions.TimeoutException as e:
-        print(e)
-        d.close()
+        print('Timeout:', e)
         print('失敗しました。')
 
 
