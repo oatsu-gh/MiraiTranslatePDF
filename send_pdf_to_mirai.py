@@ -31,7 +31,7 @@ from tqdm import tqdm
 # from pysnooper import snoop
 
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'HL_Chrome'
+BROWSER_NAME = 'Chrome'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
@@ -107,36 +107,36 @@ def split_txt(txt):
     # l = filter(lambda str: str != '\xf1', l)
     l = list(l)
 
-    tmp = ''
+    s2 = ''
     l_2 = []
 
     n = len(l)
     for i in range(n):
-        len_li = len(l[i])
-        print('len_li =', len_li)
-        # 文章があわせて1900文字未満の場合は、いまの段落を文章に追加して長くする。
-        if len(tmp) + len_li < 1800:
-            tmp += l[i].replace('\n', ' ') + '. '
-            # tmp = tmp.replace('  ', '\n\n')
+        s1 = l[i].replace('-\n', '').replace('.[', '.\n[').replace('. [', '.\n[')
+        s1 = s1.replace('\n', ' ') + '. '
+        len_s1 = len(s1)
+        # print('len_s1 =', len_s1)
+        # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
+        if len(s2) + len_s1 < 2000:
+            s2 += s1
+            s2 = s2.replace('  ', '\n\n')
 
         # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_li < 1800:
-            l_2.append(tmp)
-            tmp = l[i].replace('\n', ' ') + '. '
-            tmp = tmp.replace('  ', '\n\n')
+        elif len_s1 < 2000:
+            l_2.append(s2)
+            s2 = s1.replace('  ', '\n\n')
 
-        # とくに、いまの段落単独で1900文字を超える場合は1000~1800文字付近の文末で分割する。
+        # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
         else:
-            l_2.append(tmp)
-            s = l[i].replace('\n', ' ') + '. '
-            s = s.replace('  ', '\n\n')
-            x = l[i].find('. ', 1000, 1800) + 2
-            l_2.append(s[:x])
-            tmp = s[x:]
+            l_2.append(s2)
+            s1 = s1.replace('  ', '\n\n')
+            x = s1.find('. ', 1500, 2000) + 2
+            l_2.append(s1[:x])
+            s2 = s1[x:]
 
         # 最後の文章のとき
         if i == n - 1:
-            l_2.append(tmp)
+            l_2.append(s2)
     return l_2
 
 
@@ -149,7 +149,7 @@ def split_txt_ocrmode(txt):
     l = list(txt.split('.\n'))
     if TEST_MODE:
         print('l:')
-        print(l)
+        pprint(l)
 
     # 空文字列を除去
     # l = filter(lambda str: str != '', l)
@@ -158,36 +158,37 @@ def split_txt_ocrmode(txt):
     # l = filter(lambda str: str != '\xf1', l)
     l = list(l)
 
-    tmp = ''
+    s2 = ''
     l_2 = []
 
     n = len(l)
     for i in range(n):
-        len_li = len(l[i])
-        print('len_li =', len_li)
-        # 文章があわせて1900文字未満の場合は、いまの段落を文章に追加して長くする。
-        # 目安が1200と短めなのは、OCRだと改行やスペースを多く含みがちなため。
-        if len(tmp) + len_li < 1200:
-            print('pattern1---------')
-            tmp += l[i].replace('\n', ' ') + '. '
-            # tmp = tmp.replace('  ', '\n\n')
+        s1 = l[i].replace('-\n', '').replace('.[', '.\n[').replace('. [', '.\n[')
+        s1 = s1.replace('\n', ' ') + '. '
+        len_s1 = len(s1)
+        # print('len_s1 =', len_s1)
+        # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
+        if len(s2) + len_s1 < 2000:
+            s2 += s1
+            # s2 = s2.replace('  ', '\n\n')
 
-        # 1200文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_li < 1200:
-            print('pattern2---------')
-            l_2.append(tmp)
-            tmp = l[i].replace('\n', ' ') + '. '
-            # tmp = tmp.replace('  ', '\n\n')
+        # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
+        elif len_s1 < 2000:
+            l_2.append(s2)
+            s2 = s1
+            # s2 = s1.replace('  ', '\n\n')
 
-        # とくに、いまの段落単独で1900文字を超える場合は800~1200文字付近の文末で分割する。
+        # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
         else:
-            print('-----pattern3-----')
-            l_2.append(tmp)
-            s = l[i].replace('\n', ' ') + '. '
-            # s = s.replace('  ', '\n\n')
-            x = l[i].find('. ', 800, 1200) + 2
-            l_2.append(s[:x])
-            tmp = s[x:]
+            l_2.append(s2)
+            # s1 = s1.replace('  ', '\n\n')
+            x = s1.find('. ', 1500, 2000) + 2
+            l_2.append(s1[:x])
+            s2 = s1[x:]
+
+        # 最後の文章のとき
+        if i == n - 1:
+            l_2.append(s2)
     return l_2
 
 
