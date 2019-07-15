@@ -86,7 +86,6 @@ def gettext(pdfname):
         f.write(ret.encode('cp932', 'ignore'))
     return ret
 
-# ------------ここまでコピペ-------------------------
 
 
 def split_txt(txt):
@@ -112,24 +111,24 @@ def split_txt(txt):
 
     n = len(l)
     for i in range(n):
-        s1 = l[i].replace('-\n', '').replace('.[', '.\n[').replace('. [', '.\n[')
+        s1 = l[i].replace('-\n', '')
         s1 = s1.replace('\n', ' ') + '. '
         len_s1 = len(s1)
         # print('len_s1 =', len_s1)
         # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
         if len(s2) + len_s1 < 2000:
             s2 += s1
-            s2 = s2.replace('  ', '\n\n')
+            s2 = s2.replace('  ', '\n\n').replace('.[', '.\n[').replace('. [', '.\n[')
 
         # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
         elif len_s1 < 2000:
             l_2.append(s2)
-            s2 = s1.replace('  ', '\n\n')
+            s2 = s1.replace('  ', '\n\n').replace('.[', '.\n[').replace('. [', '.\n[')
 
         # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
         else:
             l_2.append(s2)
-            s1 = s1.replace('  ', '\n\n')
+            s1 = s1.replace('  ', '\n\n').replace('.[', '.\n[').replace('. [', '.\n[')
             x = s1.find('. ', 1500, 2000) + 2
             l_2.append(s1[:x])
             s2 = s1[x:]
@@ -163,17 +162,19 @@ def split_txt_ocrmode(txt):
 
     n = len(l)
     for i in range(n):
-        s1 = l[i].replace('-\n', '').replace('.[', '.\n[').replace('. [', '.\n[')
+        s1 = l[i].replace('-\n', '')
         s1 = s1.replace('\n', ' ') + '. '
         len_s1 = len(s1)
         # print('len_s1 =', len_s1)
         # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
-        if len(s2) + len_s1 < 2000:
+        if len(s2) + len_s1 < 1600:
+            print('---case1---')
             s2 += s1
             # s2 = s2.replace('  ', '\n\n')
 
         # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_s1 < 2000:
+        elif len_s1 < 1600:
+            print('---case2---')
             l_2.append(s2)
             s2 = s1
             # s2 = s1.replace('  ', '\n\n')
@@ -181,8 +182,9 @@ def split_txt_ocrmode(txt):
         # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
         else:
             l_2.append(s2)
+            print('---case3---')
             # s1 = s1.replace('  ', '\n\n')
-            x = s1.find('. ', 1500, 2000) + 2
+            x = s1.find('. ', 1000, ) + 2
             l_2.append(s1[:x])
             s2 = s1[x:]
 
@@ -268,7 +270,7 @@ def use_miraitranslate(d, l):
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
 
-    wait = WebDriverWait(d, 20)
+    wait = WebDriverWait(d, 30)
     wait.until(EC.presence_of_all_elements_located)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'sourceLanguageDiv')))
 
@@ -291,8 +293,8 @@ def use_miraitranslate(d, l):
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
         wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, 'loader')))
-        d.find_element_by_id('translateButtonTextTranslation').click()
         t_start = time()
+        d.find_element_by_id('translateButtonTextTranslation').click()
         # ロード画面になるまで時間をおく
         sleep(1)
         # 翻訳完了まで待つ
