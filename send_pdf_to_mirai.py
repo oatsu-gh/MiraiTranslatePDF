@@ -321,7 +321,7 @@ def use_miraitranslate(l):
         i += 1
 
     # ブラウザを閉じる
-    d.close()
+    d.quit()
 
     return answer
 
