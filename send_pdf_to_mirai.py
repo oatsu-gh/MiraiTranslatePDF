@@ -32,13 +32,15 @@ from tqdm import tqdm
 # from pysnooper import snoop
 
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'Chrome'
+BROWSER_NAME = 'HL_Chrome'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
 TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
+# スレッド数
+THREAD_NUM = cpu_count()
 
 
 def gettext(pdfname):
@@ -82,7 +84,7 @@ def gettext(pdfname):
     outfp.close()
     # 空白と改行をとりさり一塊のテキストとして返す
     # return re.sub(r"\s|　", '', ret)
-    path = ABS_DIRNAME + '/mirai_output2(OCR).txt'
+    path = ABS_DIRNAME + '/mirai_output2(gettext).txt'
     with open(path, mode='wb') as f:
         f.write(ret.encode('cp932', 'ignore'))
     return ret
@@ -173,7 +175,6 @@ def split_txt_ocrmode(txt):
 
         # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
         elif len_s1 < 1600:
-            print('---case2---')
             l_2.append(s2)
             s2 = s1
             # s2 = s1.replace('  ', '\n\n')
@@ -377,7 +378,7 @@ def main():
     try:
         print('みらい翻訳で翻訳します。')
         # コア数を数える
-        n = cpu_count()
+        n = THREAD_NUM
         if len(l) < 10:
             translated = use_miraitranslate(l)
         else:
