@@ -32,7 +32,7 @@ from tqdm import tqdm
 # from pysnooper import snoop
 
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'HL_Chrome'
+BROWSER_NAME = 'Chrome'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
@@ -113,7 +113,7 @@ def split_txt(txt):
 
     n = len(l)
     for i in range(n):
-        s1 = l[i].replace('-\n', '')
+        s1 = l[i].replace('-\n', '').replace('- \n', '')
         s1 = s1.replace('\n', ' ') + '. '
         len_s1 = len(s1)
         # print('len_s1 =', len_s1)
@@ -225,7 +225,7 @@ def select_driver(browser):
         return driver
 
     # WSLで実行された場合
-    if os.name == 'posix':
+    elif os.name == 'posix':
         print('{} on WSL'.format(browser))
         try:
             if browser == 'Firefox':
@@ -288,6 +288,8 @@ def use_miraitranslate(l):
     d_t = 0.0
     answer = ''
     for v in tqdm(l):
+        if v == '':
+            continue
 
         # 原文を入力
         d.find_element_by_id('translateSourceInput').send_keys(v)
@@ -354,6 +356,9 @@ def main():
     4. みらい翻訳に送って翻訳する
     5. 翻訳結果をTXTファイルに保存する
     """
+    print('BROWSER  :', BROWSER_NAME)
+    print('OCR_MODE :', OCR_MODE)
+    print('TEST_MODE:', TEST_MODE)
     pdfname = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
     # pdfname = ABS_DIRNAME + '/input.pdf'
 
