@@ -32,15 +32,15 @@ from tqdm import tqdm
 # from pysnooper import snoop
 
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'Chrome'
+BROWSER_NAME = 'Firefox'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
 TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
-OCR_MODE = True
-# スレッド数
-THREAD_NUM = cpu_count()
+OCR_MODE = False
+# スレッド数（ブラウザの起動個数）
+THREAD_NUM = cpu_count() // 2
 
 
 def gettext(pdfname):
