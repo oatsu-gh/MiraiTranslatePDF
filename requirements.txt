@@ -1,0 +1,5 @@
+# reqirements.txt
+pprint
+pdfminer.six
+selenium
+tqdm

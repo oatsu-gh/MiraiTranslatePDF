@@ -10,7 +10,7 @@ pdfminer
 pprint
 selenium
 tqdm
-など
+このほか geckodriver, chromedriver のいずれかが必要です。
 
 ## 用途
 みらい翻訳をつかって英語PDFファイルを翻訳、日本語のTXTファイルとして出力します。
