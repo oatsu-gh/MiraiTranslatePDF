@@ -40,7 +40,10 @@ TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
 # スレッド数（ブラウザの起動個数）
-THREAD_NUM = int(cpu_count() / 1.5)
+if cpu_count() == 4:
+    THREAD_NUM = 3
+else:
+    THREAD_NUM = cpu_count() // 2
 
 
 def gettext(filepath):
@@ -406,8 +409,8 @@ def main():
         print('みらい翻訳が完了しました。')
 
         print('ファイル出力を開始します。')
-        path = ABS_DIRNAME + '/mirai_output.txt'
-        with open(path, mode='wb') as f:
+        filepath = filepath + '_和訳.txt'
+        with open(filepath, mode='wb') as f:
             f.write(translated.encode('cp932', 'ignore'))
         print('ファイル出力が完了しました。')
 
@@ -422,13 +425,12 @@ def main():
         print('Timeout:', e)
         print('失敗しました。')
 
-
-if __name__ == '__main__':
-    main()
-
     # Windows, WSLで実行された場合に限り、出力結果をメモ帳で開く。
     if os.name in ('nt', 'posix'):
         print('メモ帳で開きます。')
-        file_path = (ABS_DIRNAME + r'/mirai_output.txt').replace('/mnt/c/', 'C:/')
-        subprocess.Popen([r'notepad.exe', file_path])
+        filepath = (filepath).replace('/mnt/c/', 'C:/')
+        subprocess.Popen([r'notepad.exe', filepath])
     input('Press enter to quit.')
+
+if __name__ == '__main__':
+    main()
