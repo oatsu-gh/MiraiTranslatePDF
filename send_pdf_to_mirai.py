@@ -7,8 +7,8 @@
 pdfを読み取ってみらい翻訳に投げるスクリプト
 """
 import os
-import subprocess
 import re
+import subprocess
 import sys
 from io import StringIO
 from multiprocessing import Pool, cpu_count
@@ -32,15 +32,15 @@ from tqdm import tqdm
 # from pysnooper import snoop
 
 # ブラウザを指定(Firefox,Chrome,Edge)
-BROWSER_NAME = 'Chrome'
+BROWSER_NAME = 'Firefox'
 # 実行ファイルの絶対パスを取得
 ABS_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 # テストモード（有効にすると標準出力が増える）
 TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
-# スレッド数
-THREAD_NUM = cpu_count()
+# スレッド数（ブラウザの起動個数）
+THREAD_NUM = cpu_count() // 2
 
 
 def gettext(pdfname):
@@ -168,18 +168,18 @@ def split_txt_ocrmode(txt):
         s1 = s1.replace('\n', ' ') + '. '
         len_s1 = len(s1)
         # print('len_s1 =', len_s1)
-        # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
+        # 文章があわせて2000文字未満の場合は、いまの段落を文章に追加して長くする。
         if len(s2) + len_s1 < 2000:
             s2 += s1
             # s2 = s2.replace('  ', '\n\n')
 
-        # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
+        # 2000文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
         elif len_s1 < 2000:
             l_2.append(s2)
             s2 = s1
             # s2 = s1.replace('  ', '\n\n')
 
-        # とくに、いまの段落単独で1800文字を超える場合は1000~1800文字付近の文末で分割する。
+        # とくに、いまの段落単独で2000文字を超える場合は1000~2000文字付近の文末で分割する。
         else:
             l_2.append(s2)
             # s1 = s1.replace('  ', '\n\n')
@@ -190,6 +190,7 @@ def split_txt_ocrmode(txt):
         # 最後の文章のとき
         if i == n - 1:
             l_2.append(s2)
+
     return l_2
 
 
@@ -225,7 +226,7 @@ def select_driver(browser):
         return driver
 
     # WSLで実行された場合
-    elif os.name == 'posix':
+    if os.name == 'posix':
         print('{} on WSL'.format(browser))
         try:
             if browser == 'Firefox':
@@ -360,8 +361,9 @@ def main():
     print('BROWSER  :', BROWSER_NAME)
     print('OCR_MODE :', OCR_MODE)
     print('TEST_MODE:', TEST_MODE)
+
+    # 英語論文のpathを指定
     pdfname = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
-    # pdfname = ABS_DIRNAME + '/input.pdf'
 
     print('PDFを読み取ります。')
     txt = gettext(pdfname)
