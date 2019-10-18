@@ -40,7 +40,7 @@ TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
 # スレッド数（ブラウザの起動個数）
-THREAD_NUM = cpu_count() // 1.5
+THREAD_NUM = int(cpu_count() / 1.5)
 
 
 def gettext(filepath):
