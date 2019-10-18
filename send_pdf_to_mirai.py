@@ -8,7 +8,7 @@ pdfを読み取ってみらい翻訳に投げるスクリプト
 """
 import os
 import subprocess
-# import re
+import re
 import sys
 from io import StringIO
 from multiprocessing import Pool, cpu_count
@@ -96,7 +96,7 @@ def split_txt(txt):
     txt:文章の文字列
     """
     # テキストを改行で区切ってリストで返す
-    l = list(txt.split('.\n'))
+    l = list(re.split('.\n|. \n|.  \n', txt))
     if TEST_MODE:
         print('l:')
         pprint(l)
@@ -147,7 +147,7 @@ def split_txt_ocrmode(txt):
     txt:文章の文字列
     """
     # テキストを改行で区切ってリストで返す
-    l = list(txt.split('.\n'))
+    l = list(re.split('.\n|. \n|.  \n', txt))
     if TEST_MODE:
         print('l:')
         pprint(l)
@@ -164,17 +164,17 @@ def split_txt_ocrmode(txt):
 
     n = len(l)
     for i in range(n):
-        s1 = l[i].replace('-\n', '')
+        s1 = l[i].replace('-\n', '').replace('- \n', '').replace('  ', ' ')
         s1 = s1.replace('\n', ' ') + '. '
         len_s1 = len(s1)
         # print('len_s1 =', len_s1)
         # 文章があわせて1800文字未満の場合は、いまの段落を文章に追加して長くする。
-        if len(s2) + len_s1 < 1600:
+        if len(s2) + len_s1 < 2000:
             s2 += s1
             # s2 = s2.replace('  ', '\n\n')
 
         # 1800文字以上の場合は、ここまでの段落をリストに加えて、今の文章と区切る。
-        elif len_s1 < 1600:
+        elif len_s1 < 2000:
             l_2.append(s2)
             s2 = s1
             # s2 = s1.replace('  ', '\n\n')
@@ -293,6 +293,7 @@ def use_miraitranslate(l):
 
         # 原文を入力
         d.find_element_by_id('translateSourceInput').send_keys(v)
+        sleep(1)
         # 翻訳ボタンをクリック
         wait.until(EC.element_to_be_clickable((By.ID, 'translateButtonTextTranslation')))
         wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, 'loader')))
@@ -302,7 +303,7 @@ def use_miraitranslate(l):
         sleep(1)
         # 翻訳完了まで待つ
         wait.until(EC.element_to_be_clickable((By.ID, 'translate-text')))
-        sleep(0.05)
+        sleep(0.5)
         # 翻訳結果を取得
         translated = d.find_element_by_id('translate-text').text + '\n'
         answer += translated
@@ -366,7 +367,7 @@ def main():
     txt = gettext(pdfname)
     if TEST_MODE:
         print('----------pdf----------')
-        print(txt)
+        pprint(txt)
         print('----------pdf----------\n')
     print('PDFを読み取りました。')
 
