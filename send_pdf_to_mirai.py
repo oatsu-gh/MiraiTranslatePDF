@@ -43,18 +43,18 @@ OCR_MODE = False
 THREAD_NUM = cpu_count() // 2
 
 
-def gettext(pdfname):
+def gettext(filepath):
     """
     PDFファイルを読み取って文字列を返す関数
     ほぼコピペ→https://arakan-pgm-ai.hatenablog.com/entry/2018/01/07/080000
     """
     # PDFファイル名が未指定の場合は、空文字列を返して終了
-    if pdfname == '':
+    if filepath == '':
         return ''
 
     # 処理するPDFファイルを開く/開けなければ
     try:
-        fp = open(pdfname, 'rb')
+        fp = open(filepath, 'rb')
     except FileNotFoundError as e:
         print(e)
         print('Press Enter to exit.')
@@ -362,11 +362,15 @@ def main():
     print('OCR_MODE :', OCR_MODE)
     print('TEST_MODE:', TEST_MODE)
 
-    # 英語論文のpathを指定
-    pdfname = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
+    # 英語論文のpathをコマンドライン引数で指定
+    try:
+        filepath = sys.argv[1]
+    # コマンドライン引数で指定されていない場合
+    except IndexError:
+        filepath = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
 
     print('PDFを読み取ります。')
-    txt = gettext(pdfname)
+    txt = gettext(filepath)
     if TEST_MODE:
         print('----------pdf----------')
         pprint(txt)
