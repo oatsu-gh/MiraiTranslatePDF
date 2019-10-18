@@ -40,7 +40,7 @@ TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
 # スレッド数（ブラウザの起動個数）
-THREAD_NUM = cpu_count() // 2
+THREAD_NUM = cpu_count() // 1.5
 
 
 def gettext(filepath):
@@ -271,6 +271,7 @@ def use_miraitranslate(l):
     d = select_driver(BROWSER_NAME)
     # サイトを開く
     d.get('https://miraitranslate.com/trial/')
+    sleep(3)
 
     wait = WebDriverWait(d, 30)
     wait.until(EC.presence_of_all_elements_located)
