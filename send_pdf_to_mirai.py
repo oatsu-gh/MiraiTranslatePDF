@@ -373,13 +373,24 @@ def main():
     except IndexError:
         filepath = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
 
-    print('PDFを読み取ります。')
-    txt = gettext(filepath)
-    if TEST_MODE:
-        print('----------pdf----------')
-        pprint(txt)
-        print('----------pdf----------\n')
-    print('PDFを読み取りました。')
+    ext = os.path.splitext(filepath)
+    if ext == '.pdf':
+        print('PDFを読み取ります。')
+        txt = gettext(filepath)
+        if TEST_MODE:
+            print('----------pdf----------')
+            pprint(txt)
+            print('----------pdf----------\n')
+        print('PDFを読み取りました。')
+    elif ext == '.txt':
+        with open(filepath):
+            txt = f.read()
+            if TEST_MODE:
+                print('----------pdf----------')
+                pprint(txt)
+                print('----------pdf----------\n')
+            print('TXTを読み取りました。')
+
 
     print('文章を分割します。')
     if OCR_MODE:
