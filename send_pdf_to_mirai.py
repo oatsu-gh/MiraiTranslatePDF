@@ -383,7 +383,7 @@ def main():
             print('----------pdf----------\n')
         print('PDFを読み取りました。')
     elif ext == '.txt':
-        with open(filepath):
+        with open(filepath) as f:
             txt = f.read()
             if TEST_MODE:
                 print('----------pdf----------')
@@ -414,7 +414,7 @@ def main():
             # print('\nl1 =', l1)
             # print('\nl2 =', l2)
             pool = Pool(n)
-            translated_multi = pool.map(use_miraitranslate, [v for v in l_div])
+            translated_multi = pool.map(use_miraitranslate, (v for v in l_div))
             translated = ''.join(translated_multi)
 
         print('みらい翻訳が完了しました。')
