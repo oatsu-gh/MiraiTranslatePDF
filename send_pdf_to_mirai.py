@@ -40,10 +40,7 @@ TEST_MODE = False
 # OCRモード（古い文書を使うときに有効にする）
 OCR_MODE = False
 # スレッド数（ブラウザの起動個数）
-if cpu_count() == 4:
-    THREAD_NUM = 3
-else:
-    THREAD_NUM = cpu_count() // 2
+THREAD_NUM = cpu_count() // 2
 
 
 def gettext(filepath):
@@ -308,7 +305,7 @@ def use_miraitranslate(l):
         sleep(1)
         # 翻訳完了まで待つ
         wait.until(EC.element_to_be_clickable((By.ID, 'translate-text')))
-        sleep(0.5)
+        sleep(1)
         # 翻訳結果を取得
         translated = d.find_element_by_id('translate-text').text + '\n'
         answer += translated
@@ -368,12 +365,13 @@ def main():
 
     # 英語論文のpathをコマンドライン引数で指定
     try:
-        filepath = sys.argv[1]
+        filepath = sys.argv[1].replace('"', '')
     # コマンドライン引数で指定されていない場合
     except IndexError:
-        filepath = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ')
+        filepath = ABS_DIRNAME + '/' + input('PDFファイル名を入力してください。\n>>> ').replace('"', '')
 
-    ext = os.path.splitext(filepath)
+
+    ext = os.path.splitext(filepath)[1]
     if ext == '.pdf':
         print('PDFを読み取ります。')
         txt = gettext(filepath)
@@ -390,7 +388,9 @@ def main():
                 pprint(txt)
                 print('----------pdf----------\n')
             print('TXTを読み取りました。')
-
+    else:
+        print('ERROR: ファイル拡張子がPDFまたはTXTじゃないです。')
+        print('ext: {}'.format(ext))
 
     print('文章を分割します。')
     if OCR_MODE:
@@ -399,7 +399,7 @@ def main():
         l = split_txt(txt)
     if TEST_MODE:
         print('l:')
-        print(l)
+        pprint(l)
     print('文章を{}分割しました。'.format(len(l)))
 
     try:
@@ -414,7 +414,7 @@ def main():
             # print('\nl1 =', l1)
             # print('\nl2 =', l2)
             pool = Pool(n)
-            translated_multi = pool.map(use_miraitranslate, (v for v in l_div))
+            translated_multi = pool.map(use_miraitranslate, [v for v in l_div])
             translated = ''.join(translated_multi)
 
         print('みらい翻訳が完了しました。')
